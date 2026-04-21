@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Background particles -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Main scene -->
+  <main class="scene" role="main">
+
+    <header class="header">
+      <h1 class="header__sub">Happy Birthday</h1>
+      <h1 class="header__title">Manolaaa</h1>
+    </header>
+
+    <!-- Cake -->
+    <section class="cake" aria-label="Birthday cake">
+
+      <!-- Candles row -->
+      <div class="candles" id="candles" aria-label="Birthday candles"></div>
+
+      <!-- Top tier -->
+      <div class="tier tier--top">
+        <div class="tier__frosting">
+          <svg viewBox="0 0 220 22" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M0,0 Q11,18 22,8 Q33,0 44,14 Q55,22 66,8 Q77,0 88,16 Q99,22 110,8 Q121,0 132,16 Q143,22 154,8 Q165,0 176,14 Q187,22 198,8 Q209,0 220,12 L220,0 Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <div class="tier__gems"></div>
+      </div>
+
+      <!-- Mid tier -->
+      <div class="tier tier--mid">
+        <div class="tier__frosting">
+          <svg viewBox="0 0 260 22" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M0,0 Q13,18 26,8 Q39,0 52,14 Q65,22 78,8 Q91,0 104,16 Q117,22 130,8 Q143,0 156,16 Q169,22 182,8 Q195,0 208,14 Q221,22 234,8 Q247,0 260,12 L260,0 Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bottom tier -->
+      <div class="tier tier--bottom">
+        <div class="tier__frosting">
+          <svg viewBox="0 0 310 22" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M0,0 Q15,18 30,8 Q45,0 60,14 Q75,22 90,8 Q105,0 120,16 Q135,22 150,8 Q165,0 180,16 Q195,22 210,8 Q225,0 240,14 Q255,22 270,8 Q285,0 300,12 Q305,6 310,10 L310,0 Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Cake base / plate -->
+      <div class="plate">
+        <div class="plate__shadow"></div>
+      </div>
+
+    </section>
+
+    <!-- Controls -->
+    <section class="controls" aria-label="Candle controls">
+
+      <div class="volume-meter" id="volumeMeter" aria-hidden="true">
+        <div class="volume-meter__track">
+          <div class="volume-meter__fill" id="meterFill"></div>
+        </div>
+        <span class="volume-meter__label" id="meterLabel">قوة النفخة</span>
+      </div>
+
+      <button class="btn btn--primary" id="micBtn" aria-label="Enable microphone to blow out candles">
+        <span class="btn__icon"></span>
+        <span class="btn__text">انقري هنا و انفخي شديييييد</span>
+      </button>
+
+      <p class="controls__hint" id="hint">شغلي المايك و انفخي بصورة ثابتة عشان تطفي الشموع</p>
+
+    </section>
+
+    <!-- Celebration overlay -->
+    <div class="celebration" id="celebration" aria-live="polite" hidden>
+      <h2 class="celebration__text">اتمني أمنية</h2>
+      <button class="btn btn--ghost" id="resetBtn">نولع الشموع</button>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+/* ============================================================
+   BIRTHDAY CAKE — style.css
+   Professional, production-grade stylesheet
+   ============================================================ */
+
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Design Tokens ────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --clr-bg:          #0d0a1a;
+  --clr-bg-2:        #160d2e;
+  --clr-gold:        #e8c97a;
+  --clr-gold-light:  #f5e4a8;
+  --clr-rose:        #d4607a;
+  --clr-rose-light:  #f09ab0;
+  --clr-teal:        #4ecdc4;
+  --clr-teal-dark:   #2ba89f;
+  --clr-lavender:    #a78bfa;
+  --clr-cream:       #fef9f0;
+  --clr-white:       #ffffff;
+
+  /* Cake tiers */
+  --tier-top-a:      #f2c4ce;
+  --tier-top-b:      #d4607a;
+  --tier-top-shadow: #a03050;
+  --tier-mid-a:      #b8a9f5;
+  --tier-mid-b:      #7c5fd4;
+  --tier-mid-shadow: #5038a8;
+  --tier-bot-a:      #f5d99a;
+  --tier-bot-b:      #c8960a;
+  --tier-bot-shadow: #9a6e00;
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 32px;
+  --space-xl: 56px;
+
+  /* Timing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Global ───────────────────────────────────────────────── */
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background: var(--clr-bg);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(167,139,250,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(212,96,122,0.10) 0%, transparent 60%);
+  font-family: var(--font-body);
+  color: var(--clr-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Particle Canvas ──────────────────────────────────────── */
+#particleCanvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Scene ────────────────────────────────────────────────── */
+.scene {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-md);
+  width: 100%;
+  max-width: 440px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.header {
+  text-align: center;
+  animation: fadeSlideDown 0.9s var(--ease-out) both;
+}
+
+.header__sub {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 2.0rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--clr-gold);
+  opacity: 0.75;
+  margin-bottom: var(--space-xs);
+}
+
+.header__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(2.4rem, 9vw, 4rem);
+  color: var(--clr-gold-light);
+  line-height: 1.1;
+  text-shadow:
+    0 0 40px rgba(232,201,122,0.35),
+    0 2px 0 rgba(0,0,0,0.4);
+}
+
+/* ── Cake Section ─────────────────────────────────────────── */
+.cake {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  animation: fadeSlideUp 1s var(--ease-out) 0.2s both;
+}
+
+/* ── Candles ──────────────────────────────────────────────── */
+.candles {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding-bottom: 6px;
+  position: relative;
+  z-index: 10;
+}
+
+.candle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Flame */
+.candle__flame-wrap {
+  position: relative;
+  width: 24px;
+  height: 40px;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.candle__glow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 210, 80, 0.55) 0%, transparent 70%);
+  animation: flicker 0.35s ease-in-out infinite alternate;
+}
+
+.candle__flame {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 30px;
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  background: radial-gradient(ellipse at 50% 85%, #fff 5%, #ffe680 35%, #ffaa00 65%, rgba(255,60,0,0.4) 90%, transparent 100%);
+  filter: drop-shadow(0 0 6px #ffd060) drop-shadow(0 0 14px rgba(255,150,0,0.6));
+  animation: flicker 0.35s ease-in-out infinite alternate;
+}
+
+.candle__flame::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+/* Smoke (shown after candle is out) */
+.candle__smoke {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Candle body */
+.candle__wick {
+  width: 2px;
+  height: 9px;
+  background: #2a1a00;
+  border-radius: 1px;
+}
+
+.candle__body {
+  width: 16px;
+  height: 56px;
+  border-radius: 5px 5px 3px 3px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset -3px 0 6px rgba(0,0,0,0.25);
+}
+
+.candle__body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 28%;
+  width: 3px;
+  height: 100%;
+  background: rgba(255,255,255,0.22);
+  border-radius: 2px;
+}
+
+/* Candle colour variants */
+.candle:nth-child(1) .candle__body { background: linear-gradient(175deg, #f9b4c8 0%, #c73060 100%); }
+.candle:nth-child(2) .candle__body { background: linear-gradient(175deg, #b8d9ff 0%, #2060c8 100%); }
+.candle:nth-child(3) .candle__body { background: linear-gradient(175deg, #a8f5e0 0%, #10a07a 100%); }
+.candle:nth-child(4) .candle__body { background: linear-gradient(175deg, #fde9a2 0%, #c89000 100%); }
+.candle:nth-child(5) .candle__body { background: linear-gradient(175deg, #e0b4ff 0%, #8830d0 100%); }
+
+/* Out state */
+.candle--out .candle__flame-wrap {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.candle--out .candle__smoke {
+  animation: smokeRise 1.8s var(--ease-out) forwards;
+}
+
+/* ── Cake Tiers ───────────────────────────────────────────── */
+.tier {
+  position: relative;
+  border-radius: 10px 10px 6px 6px;
+  overflow: visible;
+}
+
+.tier--top {
+  width: 220px;
+  height: 72px;
+  background: linear-gradient(180deg, var(--tier-top-a) 0%, var(--tier-top-b) 100%);
+  box-shadow: 0 5px 0 var(--tier-top-shadow), inset 0 2px 8px rgba(255,255,255,0.25);
+}
+
+.tier--mid {
+  width: 268px;
+  height: 82px;
+  background: linear-gradient(180deg, var(--tier-mid-a) 0%, var(--tier-mid-b) 100%);
+  box-shadow: 0 5px 0 var(--tier-mid-shadow), inset 0 2px 8px rgba(255,255,255,0.2);
+  margin-top: 5px;
+}
+
+.tier--bottom {
+  width: 316px;
+  height: 92px;
+  background: linear-gradient(180deg, var(--tier-bot-a) 0%, var(--tier-bot-b) 100%);
+  box-shadow: 0 6px 0 var(--tier-bot-shadow), inset 0 2px 8px rgba(255,255,255,0.15);
+  margin-top: 5px;
+}
+
+/* Frosting drip */
+.tier__frosting {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tier__frosting svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Pearl gems on top tier */
+.tier__gems {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.gem {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Plate */
+.plate {
+  margin-top: 1px;
+  width: 360px;
+  height: 22px;
+  background: linear-gradient(180deg, #e8e8e8 0%, #c0bfc0 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.5),
+    inset 0 2px 4px rgba(255,255,255,0.5);
+  position: relative;
+}
+
+.plate__shadow {
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  right: 10%;
+  height: 14px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+/* ── Controls ─────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  animation: fadeSlideUp 1s var(--ease-out) 0.45s both;
+  width: 100%;
+}
+
+/* Volume meter */
+.volume-meter {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.volume-meter__track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.volume-meter__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--clr-teal), var(--clr-gold));
+  box-shadow: 0 0 10px rgba(78,205,196,0.6);
+  transition: width 0.08s linear;
+}
+
+.volume-meter__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: 50px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn--primary {
+  padding: 14px 36px;
+  background: linear-gradient(135deg, var(--clr-rose) 0%, var(--clr-lavender) 100%);
+  color: var(--clr-white);
+  box-shadow: 0 4px 24px rgba(212,96,122,0.45);
+}
+
+.btn--primary:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(212,96,122,0.6);
+}
+
+.btn--primary:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn--ghost {
+  padding: 11px 28px;
+  background: transparent;
+  color: rgba(255,255,255,0.65);
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+
+.btn--ghost:hover {
+  border-color: var(--clr-gold);
+  color: var(--clr-gold);
+  transform: translateY(-2px);
+}
+
+.btn__icon {
+  font-size: 1.1rem;
+}
+
+/* Hint text */
+.controls__hint {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+/* ── Celebration Overlay ──────────────────────────────────── */
+.celebration {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  background: rgba(13,10,26,0.88);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  animation: fadeIn 0.6s var(--ease-out) both;
+}
+
+.celebration[hidden] {
+  display: none;
+}
+
+.celebration__emoji {
+  font-size: 5rem;
+  animation: bounceIn 0.8s var(--ease-spring) both;
+  line-height: 1;
+}
+
+.celebration__text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(2rem, 9vw, 3.6rem);
+  color: var(--clr-gold-light);
+  text-shadow: 0 0 40px rgba(232,201,122,0.5);
+  animation: bounceIn 0.8s var(--ease-spring) 0.15s both;
+}
+
+/* ── Confetti pieces (injected by JS) ─────────────────────── */
+.confetti {
+  position: fixed;
+  top: -16px;
+  pointer-events: none;
+  z-index: 200;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+}
+
+/* ── Keyframes ────────────────────────────────────────────── */
+@keyframes flicker {
+  0%   { transform: translateX(-50%) scaleX(1)    scaleY(1)    rotate(-2deg); }
+  100% { transform: translateX(-50%) scaleX(0.82) scaleY(1.09) rotate(2deg); }
+}
+
+@keyframes smokeRise {
+  0%   { opacity: 0.9; transform: translateX(-50%) translateY(0)    scaleX(1); }
+  40%  { opacity: 0.6; transform: translateX(-58%) translateY(-20px) scaleX(1.5); }
+  100% { opacity: 0;   transform: translateX(-42%) translateY(-56px) scaleX(2.5); }
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes bounceIn {
+  from { opacity: 0; transform: scale(0.5) rotate(-4deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes confettiFall {
+  0%   { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 380px) {
+  .tier--top    { width: 180px;  height: 60px; }
+  .tier--mid    { width: 220px;  height: 70px; }
+  .tier--bottom { width: 264px;  height: 78px; }
+  .plate        { width: 300px; }
+  .candles      { gap: 14px; }
+}
