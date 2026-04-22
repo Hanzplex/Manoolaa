@@ -1,7 +1,10 @@
 /**
  * birthday-cake/app.js
  * Handles: candle rendering, microphone analysis,
- * blow detection, confetti, and reset logic.
+ * blow detection, confetti, reset logic, and celebration audio.
+ *
+ * Audio engine uses the Web Audio API exclusively —
+ * no external files needed. All sounds are synthesized.
  */
 
 'use strict';
@@ -9,7 +12,7 @@
 /* ── Constants ──────────────────────────────────────────────── */
 const CANDLE_COUNT       = 5;
 const BLOW_RMS_THRESHOLD = 1;    // 0–255 scale
-const BLOW_SUSTAIN_MS    = 300;   // ms of continuous blow to extinguish one candle
+const BLOW_SUSTAIN_MS    = 250;   // ms of continuous blow to extinguish one candle
 const METER_SMOOTH       = 0.72;  // exponential smoothing factor (0–1)
 const CONFETTI_COUNT     = 120;
 
@@ -30,6 +33,7 @@ const state = {
   analyser:       null,
   micStream:     null,
   animFrameId:   null,
+  soundCtx:      null,   // separate context for celebration audio
 };
 
 /* ── DOM References ─────────────────────────────────────────── */
@@ -250,8 +254,8 @@ function flashMeter() {
 function setMicActiveUI() {
   const btnText = DOM.micBtn.querySelector('.btn__text');
   const btnIcon = DOM.micBtn.querySelector('.btn__icon');
-  btnText.textContent = 'BLOW';
-  btnIcon.textContent = '';
+  btnText.textContent = 'Listening…';
+  btnIcon.textContent = '🟢';
   DOM.micBtn.disabled = true;
   DOM.hint.textContent = 'Blow steadily into the mic — each breath extinguishes a candle.';
   DOM.meterLabel.textContent = 'Blow strength';
@@ -270,25 +274,199 @@ function setMicErrorUI(err) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   SOUND ENGINE  (Web Audio API — no external files)
+══════════════════════════════════════════════════════════════ */
+
+/**
+ * Lazily create a shared AudioContext for celebration sounds.
+ * We keep it separate from the mic AudioContext so they don't conflict.
+ * @returns {AudioContext}
+ */
+function getSoundCtx() {
+  if (!state.soundCtx) {
+    state.soundCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Resume if suspended (browser autoplay policy)
+  if (state.soundCtx.state === 'suspended') state.soundCtx.resume();
+  return state.soundCtx;
+}
+
+/**
+ * Play a single synthesized firework "boom":
+ *  - a short pitched thud (low-pass noise burst) → the launch
+ *  - a sparkle layer (high sine sweep) → the burst
+ *
+ * @param {number} delaySeconds - when to play relative to now
+ */
+function playFirework(delaySeconds = 0) {
+  const ctx = getSoundCtx();
+  const now = ctx.currentTime + delaySeconds;
+
+  /* ── Boom (noise + low-pass) ── */
+  const bufferSize = ctx.sampleRate * 0.6;
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass';
+  lpf.frequency.setValueAtTime(180, now);
+  lpf.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+
+  const boomGain = ctx.createGain();
+  boomGain.gain.setValueAtTime(1.1, now);
+  boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+  noise.connect(lpf);
+  lpf.connect(boomGain);
+  boomGain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + 0.6);
+
+  /* ── Sparkle (high-freq sine sweep) ── */
+  const sparkle = ctx.createOscillator();
+  sparkle.type = 'sine';
+  sparkle.frequency.setValueAtTime(1800 + Math.random() * 1200, now + 0.05);
+  sparkle.frequency.exponentialRampToValueAtTime(400, now + 0.7);
+
+  const sparkleGain = ctx.createGain();
+  sparkleGain.gain.setValueAtTime(0.0, now);
+  sparkleGain.gain.linearRampToValueAtTime(0.25, now + 0.06);
+  sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+  sparkle.connect(sparkleGain);
+  sparkleGain.connect(ctx.destination);
+  sparkle.start(now + 0.05);
+  sparkle.stop(now + 0.75);
+}
+
+/**
+ * Fire a sequence of staggered firework booms.
+ */
+function playFireworkSequence() {
+  // Staggered bursts over ~6 seconds
+  const schedule = [0, 0.5, 1.1, 1.4, 2.0, 2.6, 3.0, 3.5, 4.2, 5.0, 5.6];
+  schedule.forEach(t => playFirework(t));
+}
+
+/**
+ * Play the full "Happy Birthday to You" melody using the Web Audio API.
+ *
+ * Note frequencies (Hz) for the melody.
+ * Tune: G G A G C B | G G A G D C | G G G(high) E C B A |
+ *       F F E C D C
+ *
+ * Each entry: [frequency, durationBeats]  (1 beat = 0.42 s at ~143 BPM)
+ */
+function playHappyBirthday() {
+  const ctx   = getSoundCtx();
+  const BPM   = 138;
+  const BEAT  = 60 / BPM;           // seconds per beat
+  const START = ctx.currentTime + 0.3; // small lead-in
+
+  // Note frequencies (Hz)
+  const N = {
+    G3: 196.00, A3: 220.00, B3: 246.94,
+    C4: 261.63, D4: 293.66, E4: 329.63,
+    F4: 349.23, G4: 392.00, A4: 440.00,
+    B4: 493.88, C5: 523.25, D5: 587.33,
+    E5: 659.25, G5: 783.99,
+  };
+
+  // [freq, beats]  — rests use freq=0
+  const score = [
+    // "Hap-py  Birth-day  to  You"
+    [N.G4, 0.75], [N.G4, 0.25], [N.A4, 1], [N.G4, 1], [N.C5, 1], [N.B4, 2],
+    // "Hap-py  Birth-day  to  You"
+    [N.G4, 0.75], [N.G4, 0.25], [N.A4, 1], [N.G4, 1], [N.D5, 1], [N.C5, 2],
+    // "Hap-py  Birth-day  dear  [name]"
+    [N.G4, 0.75], [N.G4, 0.25], [N.G5, 1], [N.E5, 1], [N.C5, 1], [N.B4, 1], [N.A4, 1.5],
+    // "Hap-py  Birth-day  to  You"
+    [N.E5, 0.75], [N.E5, 0.25], [N.D5, 1], [N.C5, 1], [N.D5, 1], [N.C5, 3],
+  ];
+
+  let cursor = START;
+
+  score.forEach(([freq, beats]) => {
+    const dur    = beats * BEAT;
+    const noteOn = dur * 0.85; // slight staccato — gate at 85 %
+
+    if (freq > 0) {
+      /* Oscillator (bell-like: sine + harmonics) */
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc2.type = 'triangle';
+      osc1.frequency.value = freq;
+      osc2.frequency.value = freq * 2.01; // slight detune for warmth
+
+      /* Gain envelope */
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0, cursor);
+      env.gain.linearRampToValueAtTime(0.28, cursor + 0.012);  // attack
+      env.gain.setValueAtTime(0.22, cursor + 0.06);            // slight decay
+      env.gain.exponentialRampToValueAtTime(0.001, cursor + noteOn);
+
+      /* Reverb-ish: tiny convolver via delay+feedback */
+      const delay = ctx.createDelay(0.08);
+      delay.delayTime.value = 0.045;
+      const fbGain = ctx.createGain();
+      fbGain.gain.value = 0.18;
+
+      osc1.connect(env);
+      osc2.connect(env);
+      env.connect(ctx.destination);
+      env.connect(delay);
+      delay.connect(fbGain);
+      fbGain.connect(delay);
+      fbGain.connect(ctx.destination);
+
+      osc1.start(cursor);
+      osc2.start(cursor);
+      osc1.stop(cursor + noteOn + 0.05);
+      osc2.stop(cursor + noteOn + 0.05);
+    }
+
+    cursor += dur;
+  });
+}
+
+/**
+ * Stop / clean up the celebration audio context.
+ */
+function stopCelebrationAudio() {
+  if (state.soundCtx) {
+    state.soundCtx.close();
+    state.soundCtx = null;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    CELEBRATION
 ══════════════════════════════════════════════════════════════ */
 
-/** Show celebration overlay and fire confetti. */
+/** Show celebration overlay, fire confetti, and play sounds. */
 function triggerCelebration() {
   DOM.celebration.hidden = false;
   launchConfetti();
+  playFireworkSequence();
+  playHappyBirthday();
 }
 
 /** Hide celebration overlay and reset everything. */
 function resetExperience() {
   DOM.celebration.hidden = true;
+  stopCelebrationAudio();
   relightAllCandles();
 
   // Re-enable mic button
   const btnText = DOM.micBtn.querySelector('.btn__text');
   const btnIcon = DOM.micBtn.querySelector('.btn__icon');
   btnText.textContent = 'Enable Mic & Blow';
-  btnIcon.textContent = '';
+  btnIcon.textContent = '🎤';
   DOM.micBtn.disabled = false;
   DOM.micBtn.style.background = '';
   DOM.hint.textContent = 'Grant microphone access, then blow steadily to extinguish each candle.';
