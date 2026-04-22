@@ -12,7 +12,7 @@
 /* ── Constants ──────────────────────────────────────────────── */
 const CANDLE_COUNT       = 5;
 const BLOW_RMS_THRESHOLD = 1;    // 0–255 scale
-const BLOW_SUSTAIN_MS    = 250;   // ms of continuous blow to extinguish one candle
+const BLOW_SUSTAIN_MS    = 300;   // ms of continuous blow to extinguish one candle
 const METER_SMOOTH       = 0.72;  // exponential smoothing factor (0–1)
 const CONFETTI_COUNT     = 120;
 
@@ -273,82 +273,141 @@ function setMicErrorUI(err) {
     'Please allow microphone access in your browser settings, then reload the page.';
 }
 
+
+
 /* ══════════════════════════════════════════════════════════════
-   SOUND ENGINE  (Web Audio API — no external files)
+   SOUND ENGINE
+   — Fireworks: real .ogg/.mp3 samples via Web Audio API
+   — Happy Birthday: synthesized melody (no file needed)
 ══════════════════════════════════════════════════════════════ */
 
 /**
+ * Real firework audio sample URLs (Freesound / public domain OGG).
+ * We load several variants so each burst sounds different.
+ */
+const FIREWORK_URLS = [
+  'https://freesound.org/data/previews/270/270402_5123851-lq.mp3',  // single crack boom
+  'https://freesound.org/data/previews/270/270401_5123851-lq.mp3',  // whistle + burst
+  'https://freesound.org/data/previews/456/456790_8438588-lq.mp3',  // multi-pop burst
+  'https://freesound.org/data/previews/397/397354_4284968-lq.mp3',  // distant boom
+];
+
+/** Decoded AudioBuffer cache so we only fetch each file once. */
+const audioBufferCache = new Map();
+
+/**
  * Lazily create a shared AudioContext for celebration sounds.
- * We keep it separate from the mic AudioContext so they don't conflict.
+ * Kept separate from the mic AudioContext to avoid conflicts.
  * @returns {AudioContext}
  */
 function getSoundCtx() {
   if (!state.soundCtx) {
     state.soundCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  // Resume if suspended (browser autoplay policy)
   if (state.soundCtx.state === 'suspended') state.soundCtx.resume();
   return state.soundCtx;
 }
 
 /**
- * Play a single synthesized firework "boom":
- *  - a short pitched thud (low-pass noise burst) → the launch
- *  - a sparkle layer (high sine sweep) → the burst
- *
- * @param {number} delaySeconds - when to play relative to now
+ * Fetch and decode an audio file into an AudioBuffer.
+ * Results are cached by URL.
+ * @param {string} url
+ * @returns {Promise<AudioBuffer>}
  */
-function playFirework(delaySeconds = 0) {
+async function loadAudioBuffer(url) {
+  if (audioBufferCache.has(url)) return audioBufferCache.get(url);
   const ctx = getSoundCtx();
-  const now = ctx.currentTime + delaySeconds;
-
-  /* ── Boom (noise + low-pass) ── */
-  const bufferSize = ctx.sampleRate * 0.6;
-  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-  const noise = ctx.createBufferSource();
-  noise.buffer = noiseBuffer;
-
-  const lpf = ctx.createBiquadFilter();
-  lpf.type = 'lowpass';
-  lpf.frequency.setValueAtTime(180, now);
-  lpf.frequency.exponentialRampToValueAtTime(40, now + 0.4);
-
-  const boomGain = ctx.createGain();
-  boomGain.gain.setValueAtTime(1.1, now);
-  boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-
-  noise.connect(lpf);
-  lpf.connect(boomGain);
-  boomGain.connect(ctx.destination);
-  noise.start(now);
-  noise.stop(now + 0.6);
-
-  /* ── Sparkle (high-freq sine sweep) ── */
-  const sparkle = ctx.createOscillator();
-  sparkle.type = 'sine';
-  sparkle.frequency.setValueAtTime(1800 + Math.random() * 1200, now + 0.05);
-  sparkle.frequency.exponentialRampToValueAtTime(400, now + 0.7);
-
-  const sparkleGain = ctx.createGain();
-  sparkleGain.gain.setValueAtTime(0.0, now);
-  sparkleGain.gain.linearRampToValueAtTime(0.25, now + 0.06);
-  sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-  sparkle.connect(sparkleGain);
-  sparkleGain.connect(ctx.destination);
-  sparkle.start(now + 0.05);
-  sparkle.stop(now + 0.75);
+  const res = await fetch(url);
+  const arrayBuffer = await res.arrayBuffer();
+  const decoded = await ctx.decodeAudioData(arrayBuffer);
+  audioBufferCache.set(url, decoded);
+  return decoded;
 }
 
 /**
- * Fire a sequence of staggered firework booms.
+ * Pre-fetch all firework samples in the background so they're
+ * ready to play instantly when celebration triggers.
+ */
+async function preloadFireworkSounds() {
+  try {
+    await Promise.all(FIREWORK_URLS.map(url => loadAudioBuffer(url)));
+  } catch (e) {
+    // Silently ignore — fallback synthesis will kick in
+    console.warn('Firework preload failed, will use synthesis fallback:', e);
+  }
+}
+
+/**
+ * Play a real firework sound sample.
+ * Falls back to synthesis if the sample failed to load.
+ * @param {number} delaySeconds - scheduling delay in seconds
+ */
+async function playFirework(delaySeconds = 0) {
+  const ctx = getSoundCtx();
+  const url = FIREWORK_URLS[Math.floor(Math.random() * FIREWORK_URLS.length)];
+
+  try {
+    const buffer = await loadAudioBuffer(url);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    // Slight random pitch shift per burst for variety
+    source.playbackRate.value = 0.85 + Math.random() * 0.35;
+
+    // Master gain with a tail fade
+    const gain = ctx.createGain();
+    const startAt = ctx.currentTime + delaySeconds;
+    gain.gain.setValueAtTime(0.9, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.001, startAt + buffer.duration + 0.3);
+
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(startAt);
+
+  } catch (e) {
+    // Synthesis fallback
+    playFireworkSynthesis(delaySeconds);
+  }
+}
+
+/**
+ * Fallback synthesis firework in case network fetch fails.
+ * @param {number} delaySeconds
+ */
+function playFireworkSynthesis(delaySeconds = 0) {
+  const ctx = getSoundCtx();
+  const now = ctx.currentTime + delaySeconds;
+
+  const bufLen = ctx.sampleRate * 0.8;
+  const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuf;
+
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass';
+  lpf.frequency.setValueAtTime(200, now);
+  lpf.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(1.2, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+  noise.connect(lpf);
+  lpf.connect(g);
+  g.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + 0.8);
+}
+
+/**
+ * Schedule a realistic sequence of firework bursts over ~8 seconds.
  */
 function playFireworkSequence() {
-  // Staggered bursts over ~6 seconds
-  const schedule = [0, 0.5, 1.1, 1.4, 2.0, 2.6, 3.0, 3.5, 4.2, 5.0, 5.6];
+  const schedule = [0, 0.6, 1.2, 1.7, 2.4, 3.1, 3.6, 4.3, 5.0, 5.7, 6.5, 7.2];
   schedule.forEach(t => playFirework(t));
 }
 
@@ -580,6 +639,8 @@ function init() {
   buildCandles();
   buildGems();
   initParticleCanvas();
+  // Pre-fetch firework samples after first user interaction (autoplay policy)
+  document.addEventListener('click', preloadFireworkSounds, { once: true });
 }
 
 document.addEventListener('DOMContentLoaded', init);
