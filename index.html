@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Happy Birthday</title>
+  <title>Happy Birthday 🎂</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet" />
@@ -14,12 +14,15 @@
   <!-- Background particles -->
   <canvas id="particleCanvas"></canvas>
 
+  <!-- Fireworks canvas (shown during celebration) -->
+  <canvas id="fireworksCanvas"></canvas>
+
   <!-- Main scene -->
   <main class="scene" role="main">
 
     <header class="header">
-      <h1 class="header__sub">Happy Birthday</h1>
-      <h1 class="header__title">Manolaaa</h1>
+      <p class="header__sub">A Special Celebration</p>
+      <h1 class="header__title">Happy Birthday</h1>
     </header>
 
     <!-- Cake -->
@@ -70,22 +73,23 @@
         <div class="volume-meter__track">
           <div class="volume-meter__fill" id="meterFill"></div>
         </div>
-        <span class="volume-meter__label" id="meterLabel">قوة النفخة</span>
+        <span class="volume-meter__label" id="meterLabel">Blow strength</span>
       </div>
 
       <button class="btn btn--primary" id="micBtn" aria-label="Enable microphone to blow out candles">
-        <span class="btn__icon"></span>
-        <span class="btn__text">انقري هنا و انفخي شديييييد</span>
+        <span class="btn__icon">🎤</span>
+        <span class="btn__text">Enable Mic & Blow</span>
       </button>
 
-      <p class="controls__hint" id="hint">شغلي المايك و انفخي بصورة ثابتة عشان تطفي الشموع</p>
+      <p class="controls__hint" id="hint">Grant microphone access, then blow steadily to extinguish each candle</p>
 
     </section>
 
     <!-- Celebration overlay -->
     <div class="celebration" id="celebration" aria-live="polite" hidden>
-      <h2 class="celebration__text">اتمني أمنية</h2>
-      <button class="btn btn--ghost" id="resetBtn">نولع الشموع</button>
+      <p class="celebration__emoji">🎉</p>
+      <h2 class="celebration__text">Make a Wish!</h2>
+      <button class="btn btn--ghost" id="resetBtn">Relight the candles</button>
     </div>
 
   </main>
