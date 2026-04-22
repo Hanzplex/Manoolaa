@@ -211,16 +211,16 @@ function flashMeter() {
 }
 
 function setMicActiveUI() {
-  DOM.micBtn.querySelector('.btn__text').textContent = 'Listening\u2026';
-  DOM.micBtn.querySelector('.btn__icon').textContent = '🟢';
+  DOM.micBtn.querySelector('.btn__text').textContent = 'BLOOOWW';
+  DOM.micBtn.querySelector('.btn__icon').textContent = '';
   DOM.micBtn.disabled = true;
-  DOM.hint.textContent = 'Blow steadily into the mic \u2014 each breath extinguishes a candle.';
+  DOM.hint.textContent = 'انفخي على كل الشموع';
 }
 
 function setMicErrorUI() {
   DOM.micBtn.querySelector('.btn__text').textContent = 'Mic access denied';
   DOM.micBtn.style.background = 'linear-gradient(135deg,#666,#444)';
-  DOM.hint.textContent = 'Allow microphone access in browser settings, then reload.';
+  DOM.hint.textContent = 'اعملي اكسيس للمايك لو ما اشتغل';
 }
 
 /* ══════════════════════════════════════════════════════════════
